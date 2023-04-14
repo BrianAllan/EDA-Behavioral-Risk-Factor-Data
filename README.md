@@ -20,7 +20,7 @@ Coding and documentation were done using `R` and an `R` Markdown file to produce
 
 ### Files Used
 
-BAW_stat_inf_project.Rmd   
+EDA_BRFSS.Rmd   
 gss.Rdata   
 
 
