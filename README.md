@@ -21,7 +21,7 @@ Coding and documentation were done using `R` and an `R` Markdown file to produce
 ### Files Used
 
 EDA_BRFSS.Rmd   
-gss.Rdata   
+brfss2013.Rdata   
 
 
 ### Tools Used
