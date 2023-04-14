@@ -15,11 +15,11 @@ The three research questions chosen were the following:
 - What is the difference between the mean number of days physical health was not good over the past 30 days as reported by those who said they were in excellent general health versus those who said they were in poor general health? 
 - What are the top three auxiliary forms of exercise reported by female dancers? By male dancers? How do the lists compare?
 
-Coding and documentation was done using `R` and an `R` Markdown file.
+Coding and documentation were done using `R` and an `R` Markdown file to produce the [project report](https://brianallan.github.io/EDA-Behavioral-Risk-Factor-Data/).
+
 
 ### Files Used
 
-BAW_stat_inf_project.html    
 BAW_stat_inf_project.Rmd   
 gss.Rdata   
 
