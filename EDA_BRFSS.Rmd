@@ -1,0 +1,241 @@
+---
+title: "Exploratory Data Analysis of 2013 Behavioral Risk Factor Data"
+author: "Brian Allan Woodcock"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+**Note**: Created for the Coursera course **"Introduction to Probability and Data"** in the **_Statistics with R_** sequence by Duke University.
+
+***
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+### Load data
+
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+
+* * *
+
+## Part 1: Data
+What is the Behavioral Risk Factor Surveillance System (BRFSS)?  It is a collaborative project between the Centers for Disease Control and Prevention (CDC) and all of the states in the United States (US) as well as participating US territories.
+
+What is the objective of the BRFSS?  The BRFSS objective is to collect uniform, state-specific data on preventive health practices and risk behaviors that are linked to chronic diseases, injuries, and preventable infectious diseases that affect the adult population. Factors assessed by the BRFSS in 2013 included tobacco use, HIV/AIDS knowledge and prevention, exercise, immunization, health status, healthy days — health-related quality of life, health care access, inadequate sleep, hypertension awareness, cholesterol awareness, chronic health conditions, alcohol consumption, fruits and vegetables consumption, arthritis burden, and seatbelt use. 
+
+How was the BRFSS 2013 data collected?  Both landline telephone- and cellular telephone-based surveys were conducted. In conducting the BRFSS landline telephone survey, interviewers collected data from a randomly selected adult in a household. In conducting the cellular telephone version of the BRFSS questionnaire, interviewers collected data from an adult who participated by using a cellular telephone and resided in a private residence or college housing.  In 2012, an estimated 97.5% of US households had telephone service with telephone coverage ranging from 95.3% in New Mexico to 98.6% in Connecticut.  The percentage of cellular-only households was 39.4%.  Given that this is a telephone based survey, one cause for concern is obviously the percent of each population with non-telephone coverage.
+
+Random sampling was used to collect the data.  In some cases, simple random sampling was used (e.g., Guam and Puerto Rico).  More often stratified sampling was used in which random sampling occurred within specified strata.  In order to address non-coverage as well as underrepresentation, a weighting process was used which involved two aspects -- design weighting and a method called "raking".  So, weighting was used to address bias and shortcomings from sampling.  Unweighted data make the unwarranted assumption that each record has equal probability of being selected.  It is recommended that the final weight be used in the analysis of the data in order to make generalizations from the sample to the population.
+
+The BRFSS project is purely concerned with sampling.  So, although generalizations can be applied to populations under the restriction that the weighting recommendation be followed, conclusions about causality are not licensed.  No experimentation with random assignment was used which would be necessary in order to justify causal inferences.
+
+* Information obtained from: <https://www.cdc.gov/brfss/annual_data/2013/pdf/Overview_2013.pdf>
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1:**  
+Are unemployed females aged 18-64 more likely to have health care coverage than unemployed males?  Health care coverage has been a topic of social significance in the U.S. for the past decade.  The significance of this question is largely to see if there is a difference based on sex for those who are unemployed and below the usual retirement age.
+
+**Research quesion 2:**  
+What is the difference between the mean number of days physical health was not good over the past 30 days as reported by those who said they were in excellent general health versus those who said they were in poor general health?  Health and the perception of it is of universal significance.  The purpose of this question is to investigate the relationship between respondents' general answer as to the state of their health and the more detailed question regarding how their physical health had been over the previous 30 days.  In other words, how does a general answer as to health relate to more specific information regarding physical health?  One would expected them to be positively associated.
+
+**Research quesion 3:**
+What are the top three auxiliary forms of exercise reported by female dancers?  By male dancers?  How do the lists compare? This inquiry is of personal interest.  The author of this study enjoys dancing (Swing, Salsa, Blues dancing) and was curious about alternative forms of exercise employed by other dancers.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+**Research quesion 1:**
+Are unemployed females aged 18-64 more likely to have health care coverage than unemployed males?  Three variables from the brfss2013 data set are used for this analysis: employment status (employ1), respondents sex (sex), and health care coverage respondents aged 18-64 (X_hcvu651).  The first step in the analysis involves creating a new variable regarding employment status with binary "Yes"/"No" values.  The variable in the original data set about employment included more information about employment than necessary for the purposes of the analysis.  As shown in the following table.
+
+
+```{r}
+brfss2013 %>%
+  filter(!is.na(employ1)) %>%
+  group_by(employ1) %>%
+  summarise(count = n())
+```
+
+For the purpose of this analysis, NAs were filtered out and from the remaining options a person was interpreted to have indicated they were employed by the following responses: "Employed for wages" and "Self-employed".  These two responses were interpreted as a "Yes" to the question "Are you currently employed?" for the creation of the new variable employ_status.  All other responses as shown in the above table (except NAs which had been filtered out) were interpreted as a "No" answer to the question of employment status for the new variable employ_status.
+
+```{r}
+brfss2013 <- brfss2013 %>%
+  mutate(employ_status = ifelse(employ1 == "Employed for wages" | employ1 == "Self-employed", "Yes", "No"))
+brfss2013 %>%
+  filter(!is.na(employ1)) %>%
+  group_by(employ_status) %>%
+  summarise(count = n())
+```
+
+The second step of the analysis involved creating a data set focused on female respondents whose employment status is interpreted as unemployed by the methodology explained above.  The variable X_hcvu651 from brfss2013 contained information on those aged 18-24 who indicated either that they do or don't have health care coverage.  NAs were filtered out since among those were people outside of the targeted age range.
+
+```{r}
+f_unempl_hc <- brfss2013 %>%
+  select(sex, employ_status, X_hcvu651) %>%
+  filter(sex == "Female", employ_status == "No", !is.na(X_hcvu651))
+f_unempl_hc %>%
+  group_by(X_hcvu651) %>%
+  summarise(count = n())
+```
+
+From this table it is easy to calculate the percentage of unemployed females with health care coverage.  The answer is 56795/70531 = 0.8052488, or 80.5%.  This can be illustrated in a bar plot.
+
+
+```{r}
+ggplot(data = f_unempl_hc, aes(x = X_hcvu651)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)))
+```
+
+The third step in the analysis involved the creation of a data set focused on unemployed males, following the design of the one for the females.
+
+```{r}
+m_unempl_hc <- brfss2013 %>%
+  select(sex, employ_status, X_hcvu651) %>%
+  filter(sex == "Male", employ_status == "No", !is.na(X_hcvu651))
+m_unempl_hc %>%
+  group_by(X_hcvu651) %>%
+  summarise(count = n())
+```
+
+The calculated percentage of unemployed males with health care coverage came out to be 28655/36928 = 0.7759695, or 77.6%.  This can be visualized via a bar plot.
+
+```{r}
+ggplot(data = m_unempl_hc, aes(x = X_hcvu651)) +
+  geom_bar(aes(y = (..count..)/sum(..count..)))
+```
+
+The end result is that 80.5% of unemployed females reported having health care coverage as compared with 77.6% of males.  These percentages are not remarkably different (a difference of 2.9%).  This suggests that the answer to the original research question is that, for ages 18-64, unemployed females are only slightly more likely to have health care coverage than unemployed males.  This is a preliminary analysis, however.  One might be concerned with how the "unemployed" category was determined from the data given that it consists of a disjunction of various responses.  One might also be concerned about the legitimacy of filtering out NAs in the analysis.
+
+
+
+**Research quesion 2:**
+What is the difference between the mean number of days physical health was not good over the past 30 days as reported by those who said they were in excellent general health versus those who said they were in poor general health?  This analysis involves two variables: general health (genhlth) and number of days physical health not good (physhlth).  
+
+The first step in the analysis was to create a data set focused on those who claimed their general health is excellent.  Among these respondents, data about the number of days of bad physical health among the past 30 days was plotted in a bar plot.  The result is right-skewed with a single large peak at 0.
+
+```{r}
+genhlth_excellent <- brfss2013 %>%
+  select(genhlth, physhlth) %>%
+  filter(genhlth == "Excellent", !is.na(physhlth))
+ggplot(data = genhlth_excellent, aes(x = as.factor(physhlth))) +
+  geom_bar()
+```
+
+Moreover, statistics were calculated.  The median number of days of bad health (among the previous 30) turned out to be 0.  The mean was about 0.89, a number close to 0.
+
+```{r}
+genhlth_excellent %>%
+  summarise(e_mean = mean(physhlth), e_median = median(physhlth), e_sd = sd(physhlth),
+            e_min = min(physhlth), e_max = max(physhlth))
+```
+
+Step two of the analysis involved focusing on those who claimed to be in poor general health.  A plot of number of days of bad physical health among the past 30 days shows a left-skewed distribution with a large peak at 30.
+
+```{r}
+genhlth_poor <- brfss2013 %>%
+  select(genhlth, physhlth) %>%
+  filter(genhlth == "Poor", !is.na(physhlth))
+ggplot(data = genhlth_poor, aes(x = as.factor(physhlth))) +
+  geom_bar()
+```
+
+Calculating statistics resulted in a median of 30 and a mean of 23.06.
+
+```{r}
+genhlth_poor %>%
+  summarise(p_mean = mean(physhlth), p_median = median(physhlth), p_sd = sd(physhlth),
+            p_min = min(physhlth), p_max = max(physhlth))
+```
+
+In answer to the original research question, the difference in the means (0.89 versus 23.06) is roughly 22. This is a large difference as was expected. As with the previous analysis, NAs were filtered out.
+
+**Research quesion 3:**
+
+What are the top three auxiliary forms of exercise reported by female dancers?  By male dancers?  How do the lists compare? Three variables were involved in this analysis: respondents sex (sex), type of physical activity (exract11), and other type of physical activity (exract21).  For answering the question, a person is being classified as a dancer if "Dancing-ballet, ballroom, Latin, hip hop, etc" was their response to the question, "What type of physical activity or exercise did you spend the most time doing during the past month?" (exract11) or if that answer was their response to the follow-up question, "What other type of physical activity gave you the next most exercise during the past month?" (exract21). In other words, for the purpose of the analysis, someone is classified as a dancer if either their primary (exract11) or secondary (exract21) form of exercise they reported for the preceding month was dance.
+
+The first step in the analysis was to create a new data frame focused upon those who qualified as dancers according to the criterion just described.  
+
+```{r}
+dancers <- brfss2013 %>%
+  select(sex, exract11, exract21) %>%
+  filter(exract11 == "Dancing-ballet, ballroom, Latin, hip hop, etc" | exract21 == "Dancing-ballet, ballroom, Latin, hip hop, etc")
+```
+
+Some people listed dance as both their primary exercise and their secondary. In fact, the total number of people who did this was 7.  For the analysis, which aims to look at auxiliary exercises for dancers, these people were filtered out.  
+
+```{r}
+dancers %>%
+  filter(exract11 == "Dancing-ballet, ballroom, Latin, hip hop, etc", exract21 == "Dancing-ballet, ballroom, Latin, hip hop, etc") %>%
+  group_by(exract21) %>%
+  summarise(count = n())
+```
+
+People who listed dance as both their primary and secondary exercise were filtered out in a new data frame.
+
+```{r}
+dancers2 <- dancers %>%
+  filter(xor(exract11 == "Dancing-ballet, ballroom, Latin, hip hop, etc",  exract21 == "Dancing-ballet, ballroom, Latin, hip hop, etc"))
+```
+
+A new variable was created called alt_exercise by using an ifelse construction.  If someone listed "Dancing-ballet, ballroom, Latin, hip hop, etc" as their primary exercise, then the value for their alt_exercise was set to be what they listed as their secondary, otherwise the value was set to their primary exercise (because their secondary must have been "Dancing-ballet, ballroom, Latin, hip hop, etc" due to the previous filtering).
+
+```{r}
+dancers2 <- dancers2 %>%
+  mutate(alt_exercise = ifelse(exract11 == "Dancing-ballet, ballroom, Latin, hip hop, etc", as.character(exract21), as.character(exract11)))
+```
+
+We can then see what the frequency is for alt_exercise filtered by females.
+
+```{r}
+dancers2 %>%
+  group_by(alt_exercise) %>%
+  filter(sex == "Female") %>%
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>%
+  top_n(n =7)
+```
+
+The top three listed were "Walking", "No other activity", and "Running".  We can then filter by males.
+
+```{r}
+dancers2 %>%
+  group_by(alt_exercise) %>%
+  filter(sex == "Male", ) %>%
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>%
+  top_n(n =7)
+```
+
+The top three alternates were "Walking", "No other activity", and "Weight Lifting".  The male and female lists agree on their top two results -- "Walking" and "No other activity".  One might question whether "No other activity" should be included because it is not an activity.  If one removes that option, then the third activity in the list for females is "Other" and for males it is "Running".
+
+In order to plot these results a new data frame was created that only included activities with a frequency greater than 40.
+
+```{r}
+dancers2_filtered <- dancers2[!table(dancers2$alt_exercise)[dancers2$alt_exercise] < 40,]
+```
+
+The results appear in the table below, separating by sex.  Clearly, the bars for females are much larger than the males because of the greater proportion of females who listed dance as their primary or secondary exercise as opposed to males.
+
+```{r fig.height = 7, fig.width = 9}
+ggplot(data = dancers2_filtered, aes(x = as.factor(alt_exercise), fill = sex)) +
+  geom_bar(position = "dodge") + 
+  theme(axis.text.x= element_text(angle=90, hjust = 1, vjust = 0.5))
+```
+
